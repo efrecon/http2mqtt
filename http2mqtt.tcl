@@ -41,6 +41,9 @@ set prg_args {
     -password   ""          "Password to authenticate with"
     -keepalive  60          "MQTT keepalive to server (in seconds)"
     -retransmit 5000        "Topic retransmission, in ms."
+    -omit       ""          "Remove this leading string from destination topic"
+    -prepend    ""          "Add this before topic"
+    -append    ""           "Add this after topic"
     -qos        1           "QoS level"
     -retain     0           "Retain at MQTT server"
     -http       "http:8080" "List of protocols and ports for HTTP servicing"
@@ -140,6 +143,19 @@ proc ::send { topic data args } {
     
     toclbox getopt args qos -default $H2M(-qos) -value qos
     toclbox getopt args retain -default $H2M(-retain) -value retain
+    toclbox getopt args override -default 0 -value override
+    
+    if { ! $override } {
+        # Modify destination topic according to program options, this allows to
+        # perform some simple re-routing of topics within the topic space, for
+        # example to pick various MQTT servers behind a load-balancer or
+        # similar. 
+        if { $H2M(-omit) ne "" && [string first $H2M(-omit) $topic] == 0 } {
+            set topic [string range $topic [string length $H2M(-omit)] end]
+        }
+        set topic $H2M(-prepend)${topic}$H2M(-append)
+    }
+    
     toclbox log debug "Passing data to MQTT server, topic: $topic (QoS: $qos, Retain: $retain)"
     $H2M(client) publish $topic $data $qos $retain    
 }
