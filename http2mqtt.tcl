@@ -117,11 +117,31 @@ foreach {k v} [array get H2M -*] {
 toclbox debug DEBUG [string trim $startup]
 
 
-proc ::send { topic data } {
+# ::send -- send data to topic
+#
+#       Send data to topic at remote MQTT server. This procedure, apart from the
+#       topic and the data to be sent to the remote MQTT server, takes a number
+#       of dash-led options and their values. The recognised options are -qos
+#       and -retain and these will override the defaults that are coming from
+#       the options passed to the main program.
+#
+# Arguments:
+#	topic	Topic where to send
+#	data	Content of MQTT message
+#       args    Additional dash-led options and values
+#
+# Results:
+#       None.
+#
+# Side Effects:
+#       None.
+proc ::send { topic data args } {
     global H2M
     
-    toclbox log debug "Passing data to MQTT server, topic: $topic"
-    $H2M(client) publish $topic $data $H2M(-qos) $H2M(-retain)    
+    toclbox getopt args qos -default $H2M(-qos) -value qos
+    toclbox getopt args retain -default $H2M(-retain) -value retain
+    toclbox log debug "Passing data to MQTT server, topic: $topic (QoS: $qos, Retain: $retain)"
+    $H2M(client) publish $topic $data $qos $retain    
 }
 
 # ::forward -- HTTP router
