@@ -96,7 +96,7 @@ transformation has succeeded, it can send the data using the `mqtt`
 command.  That command is automatically bound to the remote server and
 it could look similar to the following pseudo code:
 
-    stomp $path $data
+    mqtt $path $data
 
 To pass arguments to the procedure, you can separate them with
 `!`-signs after the name of the procedure.  These arguments will be
