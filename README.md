@@ -65,6 +65,8 @@ is however possible to skip this behaviour by passing the option `-override on`
 to the internal command `mqtt` available to plugin code for reaching out to the
 server.
 
+## Routing
+
 Through its `-routes` command-line option, you will be able to bind procedures
 to a set of incoming URL paths. Both the posted data and the path are always
 passed as arguments to the procedures and these will be able to both transform
@@ -108,3 +110,8 @@ arguments everytime a topic matches, i.e. the URL that was requested,
 the content of the POST and `onearg` and `3` as arguments.  Spaces are
 allowed in arguments, as long as you specify quotes (or curly-braces)
 around the procedure call construct.
+
+An example procedure is availabe under the `exts` subdirectory. The procedure is
+able to relay command-line arguments parsing to the internal `mqtt` command to
+override the global QoS or retain flag for a given route. Associating a route to
+`mqtt!0@mqtt.tcl` will force the QoS level to 0 for that topic.
