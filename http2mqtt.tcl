@@ -213,7 +213,7 @@ proc ::forward { route prt sock url qry } {
 	    # the command called stomp, which really is an alias for
 	    # ::stomp::client::send.
 	    foreach {proc fname} [split $route "@"] break
-	    if { [lsearch $H2M(plugins) $fname] >= 0 \
+	    if { [dict exists $H2M(plugins) $fname] \
 		     && [interp exists $fname] } {
 		# Isolate procedure name from possible arguments.
 		set call [split $proc !]
@@ -227,7 +227,9 @@ proc ::forward { route prt sock url qry } {
 		    toclbox log debug "Successfully called $proc for $url: $res"
                     return $res;    # Matched, return result
 		}
-	    }
+	    } else {
+                toclbox log warn "Cannot find plugin at $fname for $url"
+            }
 	}
     }
     return ""
@@ -305,6 +307,30 @@ proc ::htinit {} {
     }
 }
 
+
+# ::debug -- Slave debug helper
+#
+#       This procedure is aliased into the slave interpreters. It arranges to
+#       push the name of the "package" (in that case the source of the plugin)
+#       at the beginning of the arguments. This is usefull to detect which
+#       plugin is sending output and to select output from specific plugins in
+#       larger projects via the -verbose command-line option.
+#
+# Arguments:
+#	pkg	Name of package (will be name of plugin)
+#	msg	Message
+#	lvl	Debug level
+#
+# Results:
+#       None.
+#
+# Side Effects:
+#       None.
+proc ::debug { pkg msg {lvl "DEBUG"}} {
+    toclbox log $lvl $msg $pkg
+}
+
+
 # ::plugin:init -- Initialise plugin facility
 #
 #       Loops through the specified routes to create and initialise
@@ -328,22 +354,30 @@ proc ::plugin:init { stomp } {
 
     foreach { path route } $H2M(-routes) {
 	foreach {proc fname} [split $route "@"] break
-	set pdir [string map \
-		      [list %prgdir% $::rootdir \
-			   %appname% $::appname \
-			   %prgname% $::appname] \
-		      $H2M(-exts)]
-	set plugin [file join $pdir $fname]
 
-	if { [file exists $plugin] && [lsearch $H2M(plugins) $fname] <0 } {
-	    toclbox log info "Loading plugin at $plugin"
-	    set slave [::safe::interpCreate $fname]
-	    if { [catch {$slave invokehidden source $plugin} res] == 0 } {
-		lappend H2M(plugins) $slave
-		$slave alias stomp ::send
-		$slave alias debug toclbox log debug
-	    }
-	}
+        foreach dir $H2M(-exts) {
+            set plugin [file join [toclbox resolve $dir [list appname $::appname]] $fname]
+
+            if { [file exists $plugin] && ![dict exists $H2M(plugins) $fname] } {
+                # Create slave interpreter and give it two commands to interact
+                # with us: mqtt to send and debug to output some debugging
+                # information.
+                set slave [::safe::interpCreate $fname]
+                $slave alias mqtt ::send
+                $slave alias debug ::debug $fname
+                toclbox log info "Loading plugin at $plugin"
+                if { [catch {$slave invokehidden source $plugin} res] == 0 } {
+                    # Remember fullpath to plugin, this will be used when data
+                    # is coming in to select the slave to send data to. Without
+                    # presence of the key in the dictionary, the HTTP receiving
+                    # callback will not forward data.
+                    dict set H2M(plugins) $fname $plugin
+                } else {
+                    toclbox log error "Cannot load plugin at $plugin: $res"
+                }
+                break;         # First match wins!
+            }
+        }
     }
     return ""
 
