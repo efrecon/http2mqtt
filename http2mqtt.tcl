@@ -358,7 +358,7 @@ proc ::plugin:init { stomp } {
         foreach dir $H2M(-exts) {
             set plugin [file join [toclbox resolve $dir [list appname $::appname]] $fname]
 
-            if { [file exists $plugin] && ![dict exists $H2M(plugins) $fname] } {
+            if { [file exists $plugin] && [file type $plugin] eq "file" && ![dict exists $H2M(plugins) $fname] } {
                 # Create slave interpreter and give it two commands to interact
                 # with us: mqtt to send and debug to output some debugging
                 # information.
