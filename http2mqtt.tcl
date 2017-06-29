@@ -47,6 +47,7 @@ set prg_args {
     -qos        1           "QoS level"
     -retain     0           "Retain at MQTT server"
     -http       "http:8080" "List of protocols and ports for HTTP servicing"
+    -authorization ""       "HTTPd authorizations (pattern realm authlist)"
     -exts       "%prgdir%/exts" "Path to plugins directory"
     -routes     "* -"       "Topic routing: default is direct mapping of ALL reqs!"
 }
@@ -258,7 +259,7 @@ proc ::http:init { port } {
     global H2M
 
     toclbox log notice "Starting to serve HTTP request on port $port"
-    set srv [::minihttpd::new "" $port]
+    set srv [::minihttpd::new "" $port -authorization $H2M(-authorization)]
     if { $srv < 0 } {
 	return -1
     }
