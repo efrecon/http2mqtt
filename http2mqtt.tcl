@@ -366,6 +366,10 @@ proc ::plugin:init { stomp } {
                 set slave [::safe::interpCreate $fname]
                 $slave alias mqtt ::send
                 $slave alias debug ::debug $fname
+                # Automatically pass further all environment variables that
+                # start with the same as the rootname of the plugin
+                # implementation.
+                ::toclbox::safe::environment $slave [string toupper [file rootname [file tail $plugin]]]*
                 toclbox log info "Loading plugin at $plugin"
                 if { [catch {$slave invokehidden source $plugin} res] == 0 } {
                     # Remember fullpath to plugin, this will be used when data
