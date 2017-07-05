@@ -359,6 +359,7 @@ proc ::plugin:init { stomp } {
     global H2M
 
     foreach { path route } $H2M(-routes) {
+        toclbox log info "Routing requests matching $path through $route"
 	foreach {proc fname} [split $route "@"] break
 
         foreach dir $H2M(-exts) {
