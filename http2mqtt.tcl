@@ -358,7 +358,7 @@ proc ::debug { pkg msg {lvl "DEBUG"}} {
 proc ::plugin:init { stomp } {
     global H2M
 
-    foreach { path route } $H2M(-routes) {
+    foreach { path route options } $H2M(-routes) {
         toclbox log info "Routing requests matching $path through $route"
 	foreach {proc fname} [split $route "@"] break
 
@@ -376,6 +376,40 @@ proc ::plugin:init { stomp } {
                 # start with the same as the rootname of the plugin
                 # implementation.
                 ::toclbox::safe::environment $slave [string toupper [file rootname [file tail $plugin]]]*
+                # Parse options and relay those into calls to island and/or
+                # firewall modules
+                foreach {opt value} $options {
+                    switch -glob -- [string tolower [string trimleft $opt -]] {
+                        "ac*" {
+                            # -access enables access to local files or
+                            # directories
+                            ::toclbox::island::add $slave $val
+                        }
+                        "al*" {
+                            # -allow enables access to remote servers
+                            lassign [split $val :] host port
+                            ::toclbox::firewall::allow $slave $host $port
+                        }
+                        "d*" {
+                            # -deny refrains access to remote servers
+                            lassign [split $val :] host port
+                            ::toclbox::firewall::deny $slave $host $port
+                        }
+                        "p*" {
+                            # -package arranges for the plugin to be able to
+                            # access a given package.
+                            lassign [split $val :] pkg version
+                            switch -- $pkg {
+                                "http" {
+                                    toclbox log debug "Helping out package $pkg"
+                                    ::toclbox::safe::environment $slave * "" tcl_platform
+                                    ::toclbox::safe::alias $slave encoding ::toclbox::safe::invoke $slave encoding
+                                }
+                            }
+                            ::toclbox::safe::package $slave $pkg $version
+                        }
+                    }
+                }
                 toclbox log info "Loading plugin at $plugin"
                 if { [catch {$slave invokehidden source $plugin} res] == 0 } {
                     # Remember fullpath to plugin, this will be used when data
