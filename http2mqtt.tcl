@@ -120,6 +120,11 @@ foreach {k v} [array get H2M -*] {
 }
 toclbox debug DEBUG [string trim $startup]
 
+# Possibly read authorization and routes information from files instead, since
+# these might get big
+toclbox offload H2M(-authorization) 3 "authorizations"
+toclbox offload H2M(-routes) 2 "routes"
+
 
 # ::send -- send data to topic
 #
