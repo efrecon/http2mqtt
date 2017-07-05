@@ -49,7 +49,7 @@ set prg_args {
     -http       "http:8080" "List of protocols and ports for HTTP servicing"
     -authorization ""       "HTTPd authorizations (pattern realm authlist)"
     -exts       "%prgdir%/exts" "Path to plugins directory"
-    -routes     "* -"       "Topic routing: default is direct mapping of ALL reqs!"
+    -routes     "* - \"\""  "Topic routing: default is direct mapping of ALL reqs!"
 }
 
 
@@ -123,7 +123,7 @@ toclbox debug DEBUG [string trim $startup]
 # Possibly read authorization and routes information from files instead, since
 # these might get big
 toclbox offload H2M(-authorization) 3 "authorizations"
-toclbox offload H2M(-routes) 2 "routes"
+toclbox offload H2M(-routes) 3 "routes"
 
 
 # ::send -- send data to topic
@@ -383,22 +383,22 @@ proc ::plugin:init { stomp } {
                         "ac*" {
                             # -access enables access to local files or
                             # directories
-                            ::toclbox::island::add $slave $val
+                            ::toclbox::island::add $slave $value
                         }
                         "al*" {
                             # -allow enables access to remote servers
-                            lassign [split $val :] host port
+                            lassign [split $value :] host port
                             ::toclbox::firewall::allow $slave $host $port
                         }
                         "d*" {
                             # -deny refrains access to remote servers
-                            lassign [split $val :] host port
+                            lassign [split $value :] host port
                             ::toclbox::firewall::deny $slave $host $port
                         }
                         "p*" {
                             # -package arranges for the plugin to be able to
                             # access a given package.
-                            lassign [split $val :] pkg version
+                            lassign [split $value :] pkg version
                             switch -- $pkg {
                                 "http" {
                                     toclbox log debug "Helping out package $pkg"
