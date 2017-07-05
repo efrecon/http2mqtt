@@ -408,6 +408,10 @@ proc ::plugin:init { stomp } {
                             }
                             ::toclbox::safe::package $slave $pkg $version
                         }
+                        "e*" {
+                            # -environement to pass environment variables.
+                            ::toclbox::safe::environment $slave $value
+                        }
                     }
                 }
                 toclbox log info "Loading plugin at $plugin"
