@@ -90,7 +90,9 @@ arguments:
 1. The full path that was requested by the client (since it matched
    `*`).
 
-2. The data that the client sent as part of the `POST` command.
+2. The list of headers that were sent by the client (lower-case).
+
+3. The data that the client sent as part of the `POST` command.
 
 The procedure `myproc` is then free to perform any kind of operations
 it deems necessary on both the data and the path.  Once all

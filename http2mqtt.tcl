@@ -204,6 +204,12 @@ proc ::forward { route prt sock url qry } {
 	set data $qry
     }
 
+    # Collect client headers    
+    if { [catch {::minihttpd::headers $prt $sock} hdrs] } {
+        toclbox log warn "No headers available from client request: $hdrs"
+        set hdrs {}
+    }
+
     if { $data ne "" } {
 	toclbox log debug "Incoming data on $prt with path $url"
 	# If we don't have a route specified, then we simply believe
@@ -227,7 +233,7 @@ proc ::forward { route prt sock url qry } {
 		set args [lrange $call 1 end]
 		# Pass STOMP client identifier, requested URL and
 		# POSTed data to the plugin procedure.
-		if { [catch {$fname eval [linsert $args 0 $proc $url $data]} res] } {
+		if { [catch {$fname eval [linsert $args 0 $proc $url $hdrs $data]} res] } {
 		    toclbox log warn "Error when calling back $proc: $res"
 		} else {
 		    toclbox log debug "Successfully called $proc for $url: $res"
