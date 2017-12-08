@@ -275,7 +275,7 @@ proc ::http:init { port } {
 	return -1
     }
 
-    foreach { path route } $H2M(-routes) {
+    foreach { path route options } $H2M(-routes) {
 	::minihttpd::handler $srv $path [list ::forward $route] "text/plain"
     }
 
