@@ -1,6 +1,6 @@
 #!/bin/sh
 # the next line restarts using tclsh \
-exec tclsh "$0" "$@"
+        exec tclsh "$0" "$@"
 
 set resolvedArgv0 [file dirname [file normalize $argv0/___]];  # Trick to resolve last symlink
 set appname [file rootname [file tail $resolvedArgv0]]
@@ -16,7 +16,7 @@ foreach module [list toclbox] {
 foreach search [list lib/modules] {
     set dir [file join $rootdir $search]
     if { [file isdirectory $dir] } {
-	::tcl::tm::path add $dir
+        ::tcl::tm::path add $dir
     }
 }
 foreach module [list til] {
@@ -70,8 +70,8 @@ proc ::help:dump { { hdr "" } } {
     global appname
     
     if { $hdr ne "" } {
-	puts $hdr
-	puts ""
+        puts $hdr
+        puts ""
     }
     puts "NAME:"
     puts "\t$appname - Forwards POSTed data to MQTT topics"
@@ -81,9 +81,9 @@ proc ::help:dump { { hdr "" } } {
     puts ""
     puts "OPTIONS:"
     foreach { arg val dsc } $::prg_args {
-	puts "\t[string range ${arg}[string repeat \  10] 0 10]$dsc (default: ${val})"
+        puts "\t[string range ${arg}[string repeat \  15] 0 15]$dsc (default: ${val})"
     }
-    exit    
+    exit
 }
 # Did we ask for help at the command-line, print out all command-line
 # options described above and exit.
@@ -124,7 +124,7 @@ toclbox debug DEBUG [string trim $startup]
 # these might get big
 toclbox offload H2M(-authorization) 3 "authorizations"
 toclbox offload H2M(-routes) 3 "routes"
-
+toclbox offload H2M(-password) -1 "password"
 
 # ::send -- send data to topic
 #
@@ -155,7 +155,7 @@ proc ::send { topic data args } {
         # Modify destination topic according to program options, this allows to
         # perform some simple re-routing of topics within the topic space, for
         # example to pick various MQTT servers behind a load-balancer or
-        # similar. 
+        # similar.
         if { $H2M(-omit) ne "" && [string first $H2M(-omit) $topic] == 0 } {
             set topic [string range $topic [string length $H2M(-omit)] end]
         }
@@ -163,7 +163,7 @@ proc ::send { topic data args } {
     }
     
     toclbox log debug "Passing data to MQTT server, topic: $topic (QoS: $qos, Retain: $retain)"
-    $H2M(client) publish $topic $data $qos $retain    
+    $H2M(client) publish $topic $data $qos $retain
 }
 
 # ::forward -- HTTP router
@@ -195,54 +195,54 @@ proc ::send { topic data args } {
 #       plugins.
 proc ::forward { route prt sock url qry } {
     global H2M
-
+    
     # Get to data for the query (i.e. what was sent through the POST).
     # We won't do anything if no data is present once we've trimmed
     # it.
     set data [string trim [::minihttpd::data $prt $sock]]
     if { $data eq "" } {
-	set data $qry
+        set data $qry
     }
-
-    # Collect client headers    
+    
+    # Collect client headers
     if { [catch {::minihttpd::headers $prt $sock} hdrs] } {
         toclbox log warn "No headers available from client request: $hdrs"
         set hdrs {}
     }
-
+    
     if { $data ne "" } {
-	toclbox log debug "Incoming data on $prt with path $url"
-	# If we don't have a route specified, then we simply believe
-	# that the path of the HTTP request is the same than the MQTT
-	# topic and we forward all data on that topic.
-	if { $route eq "" || $route eq "-" } {
+        toclbox log debug "Incoming data on $prt with path $url"
+        # If we don't have a route specified, then we simply believe
+        # that the path of the HTTP request is the same than the MQTT
+        # topic and we forward all data on that topic.
+        if { $route eq "" || $route eq "-" } {
             ::send $url $data
-	} else {
-	    # Otherwise, we call the specified procedure within the
-	    # safe interpreter (as long as it exists, but it should
-	    # have been created as part of the initialisation
-	    # process).  The procedure should arrange itself to call
-	    # the command called stomp, which really is an alias for
-	    # ::stomp::client::send.
-	    foreach {proc fname} [split $route "@"] break
-	    if { [dict exists $H2M(plugins) $fname] \
-		     && [interp exists $fname] } {
-		# Isolate procedure name from possible arguments.
-		set call [split $proc !]
-		set proc [lindex $call 0]
-		set args [lrange $call 1 end]
-		# Pass STOMP client identifier, requested URL and
-		# POSTed data to the plugin procedure.
-		if { [catch {$fname eval [linsert $args 0 $proc $url $hdrs $data]} res] } {
-		    toclbox log warn "Error when calling back $proc: $res"
-		} else {
-		    toclbox log debug "Successfully called $proc for $url: $res"
+        } else {
+            # Otherwise, we call the specified procedure within the
+            # safe interpreter (as long as it exists, but it should
+            # have been created as part of the initialisation
+            # process).  The procedure should arrange itself to call
+            # the command called stomp, which really is an alias for
+            # ::stomp::client::send.
+            foreach {proc fname} [split $route "@"] break
+            if { [dict exists $H2M(plugins) $fname] \
+                        && [interp exists $fname] } {
+                # Isolate procedure name from possible arguments.
+                set call [split $proc !]
+                set proc [lindex $call 0]
+                set args [lrange $call 1 end]
+                # Pass STOMP client identifier, requested URL and
+                # POSTed data to the plugin procedure.
+                if { [catch {$fname eval [linsert $args 0 $proc $url $hdrs $data]} res] } {
+                    toclbox log warn "Error when calling back $proc: $res"
+                } else {
+                    toclbox log debug "Successfully called $proc for $url: $res"
                     return $res;    # Matched, return result
-		}
-	    } else {
+                }
+            } else {
                 toclbox log warn "Cannot find plugin at $fname for $url"
             }
-	}
+        }
     }
     return ""
 }
@@ -268,17 +268,17 @@ proc ::forward { route prt sock url qry } {
 #       None.
 proc ::http:init { port } {
     global H2M
-
+    
     toclbox log notice "Starting to serve HTTP request on port $port"
     set srv [::minihttpd::new "" $port -authorization $H2M(-authorization)]
     if { $srv < 0 } {
-	return -1
+        return -1
     }
-
+    
     foreach { path route options } $H2M(-routes) {
-	::minihttpd::handler $srv $path [list ::forward $route] "text/plain"
+        ::minihttpd::handler $srv $path [list ::forward $route] "text/plain"
     }
-
+    
     return $srv
 }
 
@@ -298,24 +298,24 @@ proc ::http:init { port } {
 #       Start serving for HTTP requests!
 proc ::htinit {} {
     global H2M
-
+    
     foreach p $H2M(-http) {
-	set srv -1
-
-	if { [string is integer -strict $p] } {
-	    set srv [::http:init $p]
-	} elseif { [string first ":" $p] >= 0 } {
-	    foreach {proto port} [split $p ":"] break
-	    switch -nocase -- $proto {
-		"HTTP" {
-		    set srv [::http:init $port]
-		}
-	    }
-	}
-
-	if { $srv > 0 } {
-	    lappend H2M(servers) $srv
-	}
+        set srv -1
+        
+        if { [string is integer -strict $p] } {
+            set srv [::http:init $p]
+        } elseif { [string first ":" $p] >= 0 } {
+            foreach {proto port} [split $p ":"] break
+            switch -nocase -- $proto {
+                "HTTP" {
+                    set srv [::http:init $port]
+                }
+            }
+        }
+        
+        if { $srv > 0 } {
+            lappend H2M(servers) $srv
+        }
     }
 }
 
@@ -363,14 +363,14 @@ proc ::debug { pkg msg {lvl "DEBUG"}} {
 #       None.
 proc ::plugin:init { stomp } {
     global H2M
-
+    
     foreach { path route options } $H2M(-routes) {
         toclbox log info "Routing requests matching $path through $route"
-	foreach {proc fname} [split $route "@"] break
-
+        foreach {proc fname} [split $route "@"] break
+        
         foreach dir $H2M(-exts) {
             set plugin [file join [toclbox resolve $dir [list appname $::appname]] $fname]
-
+            
             if { [file exists $plugin] && [file type $plugin] eq "file" && ![dict exists $H2M(plugins) $fname] } {
                 # Create slave interpreter and give it two commands to interact
                 # with us: mqtt to send and debug to output some debugging
@@ -435,7 +435,7 @@ proc ::plugin:init { stomp } {
         }
     }
     return ""
-
+    
 }
 
 
@@ -443,10 +443,10 @@ proc ::plugin:init { stomp } {
 # Initialise MQTT connection and verbosity.
 toclbox log notice "Connecting to MQTT server at $H2M(-host):$H2M(-port)"
 set H2M(client) [mqtt new  \
-                     -username $H2M(-user) \
-                     -password $H2M(-password) \
-                     -keepalive $H2M(-keepalive) \
-                     -retransmit $H2M(-retransmit)]
+        -username $H2M(-user) \
+        -password $H2M(-password) \
+        -keepalive $H2M(-keepalive) \
+        -retransmit $H2M(-retransmit)]
 $H2M(client) connect ${appname}-[pid] $H2M(-host) $H2M(-port)
 
 # Read list of recognised plugins out from the routes.  Plugins are
@@ -459,3 +459,4 @@ plugin:init $H2M(client)
 htinit
 
 vwait forever
+
