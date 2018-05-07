@@ -96,26 +96,60 @@ called with three arguments:
 
 3. The data that the client sent as part of the `POST` command.
 
-The procedure `myproc` is then free to perform any kind of operations
-it deems necessary on both the data and the path.  Once all
-transformation has succeeded, it can send the data using the `mqtt`
-command.  That command is automatically bound to the remote server and
-it could look similar to the following pseudo code:
+The procedure `myproc` is then free to perform any kind of operations it deems
+necessary on both the data and the path.  Once all transformation has succeeded,
+it can send the data using the `mqtt` command.  That command is automatically
+bound to the remote server and it could look similar to the following pseudo
+code:
 
     mqtt $path $data
 
-To pass arguments to the procedure, you can separate them with
-`!`-signs after the name of the procedure.  These arguments will be
-blindly passed after the requested URL and the data to the procedure
-when it is executed.  So, for example, if your route contained a
-plugin specification similar to `myproc!onearg!3@myplugin.tcl`,
-procedure `myproc` in `myplugin.tcl` would be called with four
-arguments everytime a topic matches, i.e. the URL that was requested,
-the content of the POST and `onearg` and `3` as arguments.  Spaces are
-allowed in arguments, as long as you specify quotes (or curly-braces)
-around the procedure call construct.
+To pass arguments to the procedure, you can separate them with `!`-signs after
+the name of the procedure.  These arguments will be blindly passed after the
+requested URL and the data to the procedure when it is executed.  So, for
+example, if your route contained a plugin specification similar to
+`myproc!onearg!3@myplugin.tcl`, procedure `myproc` in `myplugin.tcl` would be
+called with four arguments everytime a topic matches, i.e. the URL that was
+requested, the content of the POST and `onearg` and `3` as arguments.  Spaces
+are allowed in arguments, as long as you specify quotes (or curly-braces) around
+the procedure call construct.
 
 An example procedure is availabe under the `exts` subdirectory. The procedure is
 able to relay command-line arguments parsing to the internal `mqtt` command to
 override the global QoS or retain flag for a given route. Associating a route to
 `mqtt!0@mqtt.tcl` will force the QoS level to 0 for that topic.
+
+### Escaping Safe Interpreters
+
+Every route will be executed in a safe interpreter, meaning that it will have a
+number of heavy restriction as to how the interpreter is able to interoperate
+with its environment and external resources. When specifying routes, the last
+item of each routing specification triplet is a list of dash-led options
+followed by values, options that can be used to tame the behaviour of the
+interpreter and selectively let it access external resources of various sorts.
+These options can appear as many times as necessary and are understood as
+follows:
+
+- `-access` will allow the interpreter to access a given file or directory on
+  disk. The interpreter will be able to both read and write to that location.
+
+- `-allow` takes a host pattern and a port as a value, separated by a colon.
+  This allows the interpreter to access hosts matching that pattern with the
+  [socket] command.
+
+- `-deny` takes the same form as `-allow`, but will deny access to the host
+  (pattern) and port. Allowance and denial rules are taken in order, so `-deny`
+  can be used to selectively deny to some of the hosts that would otherwise have
+  had been permitted using `-allow`.
+
+- `-package` takes the name of a package, possibly followed by a colon and a
+  version number as a value. It will arrange for the interpreter to load that
+  package (at that version number).
+
+- `-environment` takes either an environment variable or a variable and its
+  value. When followed by the name of a variable followed by an equal `=` sign
+  and a value, this will set the environment variable to that value in the
+  interpreter. When followed by just the name of an environment variable, it
+  will arrange to pass the variable (and its value) to the safe interpreter.
+
+  [socket]: https://www.tcl.tk/man/tcl/TclCmd/socket.htm
