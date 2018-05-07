@@ -55,9 +55,11 @@ The complete list of recognised options can be fonud below:
 - `-exts` is a whitespace separated list of directory specifications where to
   look for plugins.
   
-- `-routes` is an even long list of routes where the first item is a pattern
-  matching the incoming HTTP path and the second item a specification for how to
-  transform data (see below).
+- `-routes` is a list of triplets describing the routes for data transformation
+  depending on incoming paths. The first item is a pattern matching the incoming
+  HTTP path, the second item a specification for how to transform data (see
+  below) and the third item is a list of dash-led options and their values (see
+  below).
   
 All strings removed or appended through the `-omit`, `-prepend` and `-append`
 options will have effect at all-time, including when sent from the plugins. It
@@ -68,9 +70,9 @@ server.
 ## Routing
 
 Through its `-routes` command-line option, you will be able to bind procedures
-to a set of incoming URL paths. Both the posted data and the path are always
-passed as arguments to the procedures and these will be able to both transform
-data and path, for then sending to the relevant MQTT topics in their
+to a set of incoming URL paths. The posted data, the headers and the path are
+always passed as arguments to the procedures and these will be able to both
+transform data and path, for then sending to the relevant MQTT topics in their
 transformed form. You will also be able to pass arguments to those procedures in
 order to refine what they should perform or which topic they should send to, for
 example. Data transformation occuring in plugins will be executed within safe
@@ -81,11 +83,11 @@ all IO and system commands.
 All `tcl` files implementing the plugins should be placed in the directories
 that is pointed at by the `-exts` option. Binding between URL paths and
 procedures occurs through the `-routes` option. For example, starting the
-program with `-routes "* myproc@myplugin.tcl"` will arrange for all URL paths
-matching `*` (glob-style matching, e.g. all paths in this case) to be routed
-towards the procedure `myproc` that can be found in the file `myplugin.tcl`.
-Whenever an HTTP client performs a POST, the procedure will be called with two
-arguments:
+program with `-routes "* myproc@myplugin.tcl \"\""` will arrange for all URL
+paths matching `*` (glob-style matching, e.g. all paths in this case) to be
+routed towards the procedure `myproc` that can be found in the file
+`myplugin.tcl`. Whenever an HTTP client performs a POST, the procedure will be
+called with three arguments:
 
 1. The full path that was requested by the client (since it matched
    `*`).
