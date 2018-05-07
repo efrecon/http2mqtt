@@ -11,9 +11,9 @@ COPY exts/*.tcl /opt/http2mqtt/exts/
 # the lib subdirectory. Finally cleanup. Do this in one single go to keep the
 # size of the image small.
 RUN apk add --no-cache git && \
-    git clone https://github.com/efrecon/til /opt/http2mqtt/lib/til && \
+    git clone --depth 1 https://github.com/efrecon/til /opt/http2mqtt/lib/til && \
     rm -rf /opt/http2mqtt/lib/til/.git && \
-    git clone https://github.com/efrecon/toclbox /opt/http2mqtt/lib/toclbox && \
+    git clone --depth 1 https://github.com/efrecon/toclbox /opt/http2mqtt/lib/toclbox && \
     rm -rf /opt/http2mqtt/lib/toclbox/.git && \
     apk del git
 
