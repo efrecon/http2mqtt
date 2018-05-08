@@ -455,6 +455,33 @@ proc ::plugin:init { stomp } {
     
 }
 
+proc Liveness { type topic dta } {
+    global H2M
+
+    switch -- $type {
+        "connection" {
+            switch -- [dict get $dta state] {
+                "connected" {
+                    toclbox log notice "Connected to broker at $H2M(-host):$H2M(-port)"
+                }
+                "disconnected" {
+                    array set reasons {
+                        0 "Normal disconnect"
+                        1 "Unacceptable protocol version"
+                        2 "Identifier rejected"
+                        3 "Server unavailable"
+                        4 "Bad user name or password"
+                        5 "Not authorized"
+                    }
+                    toclbox log notice "Disconnected from broker at $H2M(-host):$H2M(-port): $reasons([dict get $dta reason])"
+                }
+            }
+        }
+        "publication" {
+            toclbox log debug "Data has been published at [dict get $dta topic]"
+        }
+    }
+}
 
 
 # Initialise MQTT connection and verbosity.
@@ -464,6 +491,9 @@ set H2M(client) [mqtt new  \
         -password $H2M(-password) \
         -keepalive $H2M(-keepalive) \
         -retransmit $H2M(-retransmit)]
+$H2M(client) subscribe \$LOCAL/connection [list Liveness connection]
+$H2M(client) subscribe \$LOCAL/publication [list Liveness publication]
+
 $H2M(client) connect ${appname}-[pid] $H2M(-host) $H2M(-port)
 
 # Read list of recognised plugins out from the routes.  Plugins are
