@@ -409,7 +409,12 @@ proc ::plugin:init { stomp } {
                         "p*" {
                             # -package arranges for the plugin to be able to
                             # access a given package.
-                            lassign [split $value :] pkg version
+                            set version ""
+                            if { [regexp {:(\d+(\.\d+)*)} $value - version] } {
+                                set pkg [regsub {:(\d+(\.\d+)*)} $value ""]
+                            } else {
+                                set pkg $value
+                            }
                             switch -- $pkg {
                                 "http" {
                                     toclbox log debug "Helping out package $pkg"
