@@ -163,7 +163,9 @@ proc ::send { topic data args } {
     }
     
     toclbox log debug "Passing data to MQTT server, topic: $topic (QoS: $qos, Retain: $retain)"
-    $H2M(client) publish $topic $data $qos $retain
+    if { [catch {$H2M(client) publish $topic $data $qos $retain} err] } {
+        toclbox log warn "Could not publish: $err"
+    }
 }
 
 # ::forward -- HTTP router
