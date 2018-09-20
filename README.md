@@ -180,7 +180,8 @@ The default [plugins](exts/) directory contains code to facilitate forwarding of
 data using different QoS requirements. You can use this implementation together
 with the HiveMQ public [broker](https://www.hivemq.com/try-out/) available at
 the address `broker.hivemq.com`. Run the following command to start an test
-instance of `http2mqtt`. The command arranges to lead all topics posting with the string `http2mqtt/` to easily make the difference when listening for data.
+instance of `http2mqtt`. The command arranges to lead all topics posting with
+the string `http2mqtt/` to easily make the difference when listening for data.
 
     ./http2mqtt.tcl -host broker.hivemq.com -prepend http2mqtt/ -routes "* mqtt@mqtt.tcl \"\""
 
@@ -194,4 +195,6 @@ one):
 
     http http://localhost:8080/test age=23 location=SE
 
-The web socket client window should visualise a new message received on topic `http2mqtt/test` with the JSON expression `{"age": "23", "location": "SE"}`. The JSON conversion of the parameters is the default behaviour of `httpie`.
+The web socket client window should visualise a new message received on topic
+`http2mqtt/test` with the JSON expression `{"age": "23", "location": "SE"}`. The
+JSON conversion of the parameters is the default behaviour of `httpie`.
