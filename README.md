@@ -104,6 +104,8 @@ code:
 
     mqtt $path $data
 
+### Additional Arguments
+
 To pass arguments to the procedure, you can separate them with `!`-signs after
 the name of the procedure.  These arguments will be blindly passed after the
 requested URL and the data to the procedure when it is executed.  So, for
@@ -142,6 +144,11 @@ follows:
   can be used to selectively deny to some of the hosts that would otherwise have
   had been permitted using `-allow`.
 
+- `-path` and `-module` takes the local path to a directory where to find
+  old-style packages or modules.  The directory will then be added to the access
+  path in order to arrange for access to specific packages at specific locations
+  on the disk.
+
 - `-package` takes the name of a package, possibly followed by a colon and a
   version number as a value. It will arrange for the interpreter to load that
   package (at that version number).
@@ -153,3 +160,38 @@ follows:
   will arrange to pass the variable (and its value) to the safe interpreter.
 
   [socket]: https://www.tcl.tk/man/tcl/TclCmd/socket.htm
+
+### Strong Interpreters
+
+Whenever the name of the file from which the interpreter is to be created starts
+with an exclamation mark (`!`), the sign will be removed from the name when
+looking for the implementation and the interpreter will be a regular (non-safe)
+interpreter. This allows for more powerful interpreters, or to make use of
+packages that have no support for the safe base.
+
+Creating non-safe interpreters is not the preferred way of interacting with
+external code. It should only be used in controlled and trusted environments.
+Otherwise, `http2mqtt` is tuned for working with code in sandboxed interpreters
+and the additional security that safe interpreters provide
+
+## Testing
+
+The default [plugins](exts/) directory contains code to facilitate forwarding of
+data using different QoS requirements. You can use this implementation together
+with the HiveMQ public [broker](https://www.hivemq.com/try-out/) available at
+the address `broker.hivemq.com`. Run the following command to start an test
+instance of `http2mqtt`. The command arranges to lead all topics posting with the string `http2mqtt/` to easily make the difference when listening for data.
+
+    ./http2mqtt.tcl -host broker.hivemq.com -prepend http2mqtt/ -routes "* mqtt@mqtt.tcl \"\""
+
+Once done, you can navigate to the demo web socket
+[client](http://www.hivemq.com/demos/websocket-client/), connect to
+`broker.hivemq.com` and subscribe to `http2mqtt/#`.
+
+To convert and send data, use any command-line HTTP client, such as
+[httpie](https://httpie.org/) and issue the following command (or a similar
+one):
+
+    http http://localhost:8080/test age=23 location=SE
+
+The web socket client window should visualise a new message received on topic `http2mqtt/test` with the JSON expression `{"age": "23", "location": "SE"}`. The JSON conversion of the parameters is the default behaviour of `httpie`.

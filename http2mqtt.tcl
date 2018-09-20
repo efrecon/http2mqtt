@@ -374,80 +374,43 @@ proc ::plugin:init { stomp } {
         toclbox log info "Routing requests matching $path through $route"
         foreach {proc fname} [split $route "@"] break
         
+        # Use a "!" leading character for the filename as a marker for non-safe
+        # interpreters.
+        if { [string index $fname 0] eq "!" } {
+            set strong 1
+            set fname [string range $fname 1 end]
+        } else {
+            set strong 0
+        }
+        
         foreach dir $H2M(-exts) {
             set plugin [file join [toclbox resolve $dir [list appname $::appname]] $fname]
             
             if { [file exists $plugin] && [file type $plugin] eq "file" \
                         && ![dict exists $H2M(plugins) $route] } {
+                # Arrange to automatically pass further all environment
+                # variables that start with the same as the rootname of the
+                # plugin implementation.
+                set envptn [string toupper [file rootname [file tail $plugin]]]*
                 # Create slave interpreter and give it two commands to interact
-                # with us: mqtt to send and debug to output some debugging
-                # information.
-                set slave [::safe::interpCreate]
-                $slave alias mqtt ::send
-                $slave alias debug ::debug $fname
-                # Automatically pass further all environment variables that
-                # start with the same as the rootname of the plugin
-                # implementation.
-                ::toclbox::safe::environment $slave [string toupper [file rootname [file tail $plugin]]]*
-                # Parse options and relay those into calls to island and/or
-                # firewall modules
-                foreach {opt value} $options {
-                    switch -glob -- [string tolower [string trimleft $opt -]] {
-                        "ac*" {
-                            # -access enables access to local files or
-                            # directories
-                            ::toclbox::island::add $slave $value
-                        }
-                        "al*" {
-                            # -allow enables access to remote servers
-                            lassign [split $value :] host port
-                            ::toclbox::firewall::allow $slave $host $port
-                        }
-                        "d*" {
-                            # -deny refrains access to remote servers
-                            lassign [split $value :] host port
-                            ::toclbox::firewall::deny $slave $host $port
-                        }
-                        "p*" {
-                            # -package arranges for the plugin to be able to
-                            # access a given package.
-                            set version ""
-                            if { [regexp {:(\d+(\.\d+)*)} $value - version] } {
-                                set pkg [regsub {:(\d+(\.\d+)*)} $value ""]
-                            } else {
-                                set pkg $value
-                            }
-                            switch -- $pkg {
-                                "http" {
-                                    toclbox log debug "Helping out package $pkg"
-                                    ::toclbox::safe::environment $slave * "" tcl_platform
-                                    ::toclbox::safe::alias $slave encoding ::toclbox::safe::invoke $slave encoding
-                                }
-                            }
-                            ::toclbox::safe::package $slave $pkg $version
-                        }
-                        "e*" {
-                            # -environement to pass/set environment variables.
-                            set equal [string first "=" $value]
-                            if { $equal >= 0 } {
-                                set varname [string trim [string range $value 0 [expr {$equal-1}]]]
-                                set value [string trim [string range $value [expr {$equal+1}] end]]
-                                ::toclbox::safe::envset $slave $varname $value
-                            } else {
-                                ::toclbox::safe::environment $slave $value
-                            }
-                        }
-                    }
-                }
-                toclbox log info "Loading plugin at $plugin"
-                if { [catch {$slave invokehidden source $plugin} res] == 0 } {
-                    # Remember fullpath to plugin, this will be used when data
-                    # is coming in to select the slave to send data to. Without
-                    # presence of the key in the dictionary, the HTTP receiving
-                    # callback will not forward data.
-                    dict set H2M(plugins) $route $slave
+                # with us: disque to operate on jobs and debug to output some
+                # debugging information.
+                if { $strong } {
+                    set slave [::toclbox::interp::create $plugin \
+                                    -environment $envptn \
+                                    -alias [list debug ::debug $fname] \
+                                    -alias [list mqtt ::send] \
+                                    {*}$options]
                 } else {
-                    toclbox log error "Cannot load plugin at $plugin: $res"
+                    set slave [::toclbox::interp::create $plugin \
+                                    -safe \
+                                    -environment $envptn \
+                                    -alias [list debug ::debug $fname] \
+                                    -alias [list mqtt ::send] \
+                                    {*}$options]
+                }
+                if { $slave ne "" } {
+                    dict set H2M(plugins) $route $slave
                 }
                 break;         # First match wins!
             }
