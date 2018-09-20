@@ -19,6 +19,6 @@ rename ::mqtt ::__mqtt_orig
 #
 # Side Effects:
 #       None.
-proc mqtt { topic data {qos 1} {retain 0} } {
+proc mqtt { topic hdrs data {qos 1} {retain 0} } {
     ::__mqtt_orig $topic $data -qos $qos -retain $retain
 }
