@@ -41,6 +41,7 @@ set prg_args {
     -password   ""          "Password to authenticate with"
     -keepalive  60          "MQTT keepalive to server (in seconds)"
     -retransmit 5000        "Topic retransmission, in ms."
+    -name       "%hostname%-%pid%-%prgname%" "MQTT client name"    
     -omit       ""          "Remove this leading string from destination topic"
     -prepend    ""          "Add this before topic"
     -append    ""           "Add this after topic"
@@ -459,7 +460,12 @@ set H2M(client) [mqtt new  \
 $H2M(client) subscribe \$LOCAL/connection [list Liveness connection]
 $H2M(client) subscribe \$LOCAL/publication [list Liveness publication]
 
-$H2M(client) connect ${appname}-[pid] $H2M(-host) $H2M(-port)
+# Generate client name
+set cname [::toclbox::text::resolve $H2M(-name) \
+                [list hostname [info hostname] \
+                      pid [pid]]]
+set cname [string range $cname 0 22]; # Cut to MQTT max length
+$H2M(client) connect $cname $H2M(-host) $H2M(-port)
 
 # Read list of recognised plugins out from the routes.  Plugins are
 # only to be found in the directory specified as part of the -exts
