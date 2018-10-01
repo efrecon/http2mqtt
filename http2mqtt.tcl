@@ -5,7 +5,7 @@
 set resolvedArgv0 [file dirname [file normalize $argv0/___]];  # Trick to resolve last symlink
 set appname [file rootname [file tail $resolvedArgv0]]
 set rootdir [file normalize [file dirname $resolvedArgv0]]
-foreach module [list toclbox] {
+foreach module [list toclbox mqtt] {
     foreach search [list lib/$module ../common/$module] {
         set dir [file join $rootdir $search]
         if { [file isdirectory $dir] } {
@@ -29,16 +29,16 @@ foreach module [list til] {
 }
 package require Tcl 8.6
 package require toclbox
-package require mqtt
+package require smqtt
 package require http
 package require minihttpd
 set prg_args {
     -help       ""          "Print this help and exit"
     -verbose    "* DEBUG"   "Verbosity specification for program and modules"
-    -port       1883        "Port to send to"
-    -host       localhost   "Hostname of remote server"
-    -user       ""          "Username to authenticate with"
-    -password   ""          "Password to authenticate with"
+    -port       1883        "Port at MQTT broker to send to"
+    -host       localhost   "Hostname of remote MQTT broker"
+    -user       ""          "Username to authenticate with at MQTT broker"
+    -password   ""          "Password to authenticate with at MQTT broker"
     -keepalive  60          "MQTT keepalive to server (in seconds)"
     -retransmit 5000        "Topic retransmission, in ms."
     -name       "%hostname%-%pid%-%prgname%" "MQTT client name"    
@@ -164,7 +164,7 @@ proc ::send { topic data args } {
     }
     
     toclbox log debug "Passing data to MQTT server, topic: $topic (QoS: $qos, Retain: $retain)"
-    if { [catch {$H2M(client) publish $topic $data $qos $retain} err] } {
+    if { [catch {$H2M(client) send $topic $data $qos $retain} err] } {
         toclbox log warn "Could not publish: $err"
     }
 }
@@ -421,51 +421,13 @@ proc ::plugin:init { stomp } {
     
 }
 
-proc Liveness { type topic dta } {
-    global H2M
-
-    switch -- $type {
-        "connection" {
-            switch -- [dict get $dta state] {
-                "connected" {
-                    toclbox log notice "Connected to broker at $H2M(-host):$H2M(-port)"
-                }
-                "disconnected" {
-                    array set reasons {
-                        0 "Normal disconnect"
-                        1 "Unacceptable protocol version"
-                        2 "Identifier rejected"
-                        3 "Server unavailable"
-                        4 "Bad user name or password"
-                        5 "Not authorized"
-                    }
-                    toclbox log notice "Disconnected from broker at $H2M(-host):$H2M(-port): $reasons([dict get $dta reason])"
-                }
-            }
-        }
-        "publication" {
-            toclbox log debug "Data has been published at [dict get $dta topic]"
-        }
-    }
-}
-
 
 # Initialise MQTT connection and verbosity.
 toclbox log notice "Connecting to MQTT server at $H2M(-host):$H2M(-port)"
-set H2M(client) [mqtt new  \
-        -username $H2M(-user) \
-        -password $H2M(-password) \
-        -keepalive $H2M(-keepalive) \
-        -retransmit $H2M(-retransmit)]
-$H2M(client) subscribe \$LOCAL/connection [list Liveness connection]
-$H2M(client) subscribe \$LOCAL/publication [list Liveness publication]
-
-# Generate client name
-set cname [::toclbox::text::resolve $H2M(-name) \
-                [list hostname [info hostname] \
-                      pid [pid]]]
-set cname [string range $cname 0 22]; # Cut to MQTT max length
-$H2M(client) connect $cname $H2M(-host) $H2M(-port)
+set H2M(client) [smqtt new mqtt://$H2M(-user):$H2M(-password)@$H2M(-host):$H2M(-port) \
+                        -name $H2M(-name) \
+                        -keepalive $H2M(-keepalive) \
+                        -retransmit $H2M(-retransmit)]
 
 # Read list of recognised plugins out from the routes.  Plugins are
 # only to be found in the directory specified as part of the -exts

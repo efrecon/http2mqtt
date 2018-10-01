@@ -4,3 +4,6 @@
 [submodule "lib/til"]
 	path = lib/til
 	url = https://github.com/efrecon/til.git
+[submodule "lib/mqtt"]
+	path = lib/mqtt
+	url = https://github.com/efrecon/mqtt.git
