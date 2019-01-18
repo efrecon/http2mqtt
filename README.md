@@ -159,6 +159,9 @@ follows:
   interpreter. When followed by just the name of an environment variable, it
   will arrange to pass the variable (and its value) to the safe interpreter.
 
+- `-source` will source an existing file into the interpreter before the main
+  source file is sourced. This can be used for unpackaged dependencies.
+
   [socket]: https://www.tcl.tk/man/tcl/TclCmd/socket.htm
 
 ### Strong Interpreters
