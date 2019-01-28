@@ -123,6 +123,17 @@ toclbox debug DEBUG [string trim $startup]
 
 # Possibly read authorization and routes information from files instead, since
 # these might get big
+toclbox apparmor -allow */bin/echo \
+                 -allow */bin/printf \
+                 -allow */bin/grep \
+                 -allow */bin/sed \
+                 -allow */bin/awk \
+                 -allow */bin/jq \
+                 -allow */bin/cut \
+                 -allow */bin/head \
+                 -allow */bin/tail \
+                 -allow */bin/tr \
+		 -allow */bin/sort
 toclbox offload H2M(-authorization) 3 "authorizations"
 toclbox offload H2M(-routes) 3 "routes"
 toclbox offload H2M(-password) -1 "password"
